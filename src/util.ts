@@ -58,10 +58,21 @@ export function stringifyData(data: any): string {
             else if(isObjectMpType(value, MpTypes.Player)) type = MpTypes.Player;
             else if(isObjectMpType(value, MpTypes.Vehicle)) type = MpTypes.Vehicle;
 
-            if(type) return {
-                __t: type,
-                i: typeof value.remoteId === 'number' ? value.remoteId : value.id
-            };
+            if(type) {
+                return {
+                    __t: type,
+                    i: typeof value.remoteId === 'number' ? value.remoteId : value.id
+                };
+            } else {
+                if (value instanceof Function || typeof value == 'function') {
+                    let fnBody = value.toString();
+                    if (fnBody.length < 8 || fnBody.substring(0, 8) !== 'function') {
+                      return '_NuFrRa_' + fnBody;
+                    }
+
+                    return fnBody;
+                }
+            }
         }
 
         return value;
@@ -88,7 +99,23 @@ export function parseData(data: string): any {
                 case MpTypes.Vehicle: collection = mp.vehicles; break;
             }
 
-            if(collection) return collection[env === 'client' ? 'atRemoteId' : 'at'](id);
+            if(collection) {
+                return collection[env === 'client' ? 'atRemoteId' : 'at'](id);
+            } else {
+                if (value.length < 8) {
+                    return value;
+                }
+
+                let prefix = value.substring(0, 8);
+
+                if (prefix === 'function') {
+                    return eval('(' + value + ')');
+                }
+
+                if (prefix === '_NuFrRa_') {
+                    return eval(value.slice(8));
+                }
+            }
         }
 
         return value;
